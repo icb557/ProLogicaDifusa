@@ -67,40 +67,72 @@ rules = [
 ingenieria_ctrl = ctrl.ControlSystem(rules)
 ingenieria_simulador = ctrl.ControlSystemSimulation(ingenieria_ctrl)
 
-# Pedir valores de entrada al usuario
-valorMatematicas = np.double(input("Ingrese su nivel en matemáticas (0-10): "))
-valorProgramacion = np.double(input("Ingrese su nivel en programación (0-10): "))
-valorGestionProyectos = np.double(input("Ingrese su nivel en gestión de proyectos (0-10): "))
+def calcMembership(funcion, valor, conjunto):
+    return fuzz.interp_membership(funcion.universe, funcion[conjunto].mf, valor)
 
-# Asignar los valores a la simulación
-ingenieria_simulador.input['matematicas'] = valorMatematicas
-ingenieria_simulador.input['programacion'] = valorProgramacion
-ingenieria_simulador.input['gestion_de_proyectos'] = valorGestionProyectos
+def deffuzifyResult(resultado, ingInfNoApto, ingInfMedioApto, ingInfApto):
+    # Determinar la clasificación final
+    if resultado <= 4:
+        clasificacion = "No Apto"
+    elif resultado >= 5 and resultado <=6:
+        Mayor = np.fmax(ingInfNoApto, ingInfMedioApto)
+        if Mayor == ingInfNoApto:
+            clasificacion = "No Apto"
+        else:
+            clasificacion = "Medianamente Apto"
+    elif resultado >= 7 and resultado <=8:
+        Mayor = np.fmax(ingInfMedioApto, ingInfApto)
+        if Mayor == ingInfMedioApto:
+            clasificacion = "Medianamente Apto"
+        else:
+            clasificacion = "Apto"
+    else:
+        clasificacion = "Apto"
+    return clasificacion
 
-# Computar el resultado
-ingenieria_simulador.compute()
+def getResults(valorMatematicas, valorProgramacion, valorGestionProyectos):
+    # Asignar los valores a la simulación
+    ingenieria_simulador.input['matematicas'] = valorMatematicas
+    ingenieria_simulador.input['programacion'] = valorProgramacion
+    ingenieria_simulador.input['gestion_de_proyectos'] = valorGestionProyectos
 
-# Obtener el resultado de la salida
-resultado = ingenieria_simulador.output['ingenieria_informatica']
-print("Nivel de aptitud para Ingeniería Informática:", resultado)
+    # Computar el resultado
+    ingenieria_simulador.compute()
 
-# Mostrar la vista de la salida con la simulación aplicada
-ingenieria_informatica.view(sim=ingenieria_simulador)
+    # Obtener el resultado de la salida
+    resultado = ingenieria_simulador.output['ingenieria_informatica']   
 
-matematicasBajo = fuzz.interp_membership(matematicas.universe, matematicas['bajo'].mf, valorMatematicas)
-matematicasMedio = fuzz.interp_membership(matematicas.universe, matematicas['medio'].mf, valorMatematicas)
-matematicasAlto = fuzz.interp_membership(matematicas.universe, matematicas['alto'].mf, valorMatematicas)
+    membership = {
+        "Antecedentes": {
+            "matematicas": {
+                "bajo": calcMembership(matematicas, valorMatematicas, 'bajo'),
+                "medio": calcMembership(matematicas, valorMatematicas, 'medio'),
+                "alto": calcMembership(matematicas, valorMatematicas, 'alto')
+            }, 
+            "programacion": {
+                "bajo": calcMembership(programacion, valorProgramacion, 'bajo'),
+                "medio": calcMembership(programacion, valorProgramacion, 'medio'),
+                "alto": calcMembership(programacion, valorProgramacion, 'alto')
+            }, 
+            "gestion_de_proyectos": {
+                "bajo": calcMembership(gestion_de_proyectos, valorGestionProyectos, 'bajo'),
+                "medio": calcMembership(gestion_de_proyectos, valorGestionProyectos, 'medio'),
+                "alto": calcMembership(gestion_de_proyectos, valorGestionProyectos, 'alto')
 
+            }
+        },
+        "Consecuente": {
+            "No apto": calcMembership(ingenieria_informatica, resultado, 'No apto'),
+            "Medianamente apto": calcMembership(ingenieria_informatica, resultado, 'Medianamente apto'),
+            "Apto": calcMembership(ingenieria_informatica, resultado, 'Apto')
+        }
+    }
 
-programacionBajo = fuzz.interp_membership(programacion.universe, programacion['bajo'].mf, valorProgramacion)
-programacionMedio = fuzz.interp_membership(programacion.universe, programacion['medio'].mf, valorProgramacion)
-programacionAlto = fuzz.interp_membership(programacion.universe, programacion['alto'].mf, valorProgramacion)
+    results = {
+        "resultadoNumerico": resultado,
+        "resultadoTexto": deffuzifyResult(resultado, membership["Consecuente"]["No apto"], membership["Consecuente"]["Medianamente apto"], membership["Consecuente"]["Apto"]),
+        "membership": membership
+    }
 
-gestionBajo = fuzz.interp_membership(gestion_de_proyectos.universe, gestion_de_proyectos['bajo'].mf, valorGestionProyectos)
-gestionMedio = fuzz.interp_membership(gestion_de_proyectos.universe, gestion_de_proyectos['medio'].mf, valorGestionProyectos)
-gestionAlto = fuzz.interp_membership(gestion_de_proyectos.universe, gestion_de_proyectos['alto'].mf, valorGestionProyectos)
+    return results
 
-# Imprimir los valores de pertenencia
-print("Matemáticas - Bajo:", matematicasBajo, "Medio:", matematicasMedio, "Alto:", matematicasAlto)
-print("Programación - Bajo:", programacionBajo, "Medio:", programacionMedio, "Alto:", programacionAlto)
-print("Gestión de Proyectos - Bajo:", gestionBajo, "Medio:", gestionMedio, "Alto:", gestionAlto)
