@@ -54,10 +54,17 @@ def show_form():
                             \n     - Medianamente apto: {resultados['membership']['Consecuente']['Medianamente apto']:.2f}
                             \n     - Apto: {resultados['membership']['Consecuente']['Apto']:.2f}""")
 
+    # Función para limpiar los campos de entrada
+    def reset_seleccion():
+        entry_nombre.delete(0, tk.END)
+        entry_matematicas.delete(0, tk.END)
+        entry_programacion.delete(0, tk.END)
+        entry_gestion.delete(0, tk.END)
+
     # Configuración de la ventana principal
     root = tk.Tk()
     root.title("Grado de aptitud para ingeniería informática")
-    root.geometry("500x380")
+    root.geometry("500x430")
 
     # Validación de entrada
     vcmd = (root.register(validar_entrada), '%P')
@@ -85,11 +92,12 @@ def show_form():
     entry_gestion = tk.Entry(root, validate='key', validatecommand=vcmd)
     entry_gestion.pack(pady=5)
 
+    # Botón Limpiar
+    tk.Button(root, text="Limpiar", command=reset_seleccion).pack(pady=10)
     # Botón Calcular
     tk.Button(root, text="Calcular", command=calcular).pack(pady=10)
-
     # Botón Cerrar
-    tk.Button(root, text="Cerrar", command=root.quit).pack(pady=5)
+    tk.Button(root, text="Cerrar", command=root.quit).pack(pady=10)
 
     # Ejecutar la aplicación
     root.mainloop()
